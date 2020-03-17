@@ -38,8 +38,8 @@ parser.add_argument('--es', default=300, type=int, help='epoch size')
 parser.add_argument('--cifar', default=10, type=int, help='dataset classes number')
 args = parser.parse_args()
 
-if not os.path.isdir('./checkpoint/cifar'+str(args.cifar)+"/"+args.netName):
-    os.mkdir('./checkpoint/cifar'+str(args.cifar)+"/"+args.netName)
+if not os.path.isdir('checkpoint/cifar'+str(args.cifar)+"/"+args.netName):
+    os.makedirs('checkpoint/cifar'+str(args.cifar)+"/"+args.netName)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(device)
