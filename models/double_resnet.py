@@ -10,19 +10,33 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-__all__ = ['old_resnet18', 'old_resnet34', 'old_resnet50', 'old_resnet101',
-           'old_resnet152']
+__all__ = ['double_resnet18', 'double_resnet34', 'double_resnet50', 'double_resnet101',
+           'double_resnet152']
 
+class DoubleConv(nn.Module):
+    def __init__(self, in_planes, out_planes,kernel_size, stride=1,padding=1):
+        super(DoubleConv, self).__init__()
+        self.conv1 = nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
+                     padding=padding, bias=False)
+        self.conv2 = nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
+                              padding=padding, bias=False)
+        self.bn1 = nn.BatchNorm2d(out_planes)
+        self.bn2 = nn.BatchNorm2d(out_planes)
+
+    def forward(self, input):
+        return self.bn1(self.conv1(input))+self.bn2(self.conv2(input))
 
 class BasicBlock(nn.Module):
     expansion = 1
 
     def __init__(self, in_planes, planes, stride=1):
         super(BasicBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(planes)
+        # self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        # self.bn1 = nn.BatchNorm2d(planes)
+        self.doubleConv1 = DoubleConv(in_planes, planes, kernel_size=3,padding=1, stride=stride)
+        # self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
+        # self.bn2 = nn.BatchNorm2d(planes)
+        self.doubleConv2 = DoubleConv(planes,planes,3,padding=1)
 
         self.shortcut = nn.Sequential()
         if stride != 1 or in_planes != self.expansion*planes:
@@ -32,8 +46,8 @@ class BasicBlock(nn.Module):
             )
 
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.bn2(self.conv2(out))
+        out = F.relu(self.doubleConv1(x))
+        out = self.doubleConv2(out)
         out += self.shortcut(x)
         out = F.relu(out)
         return out
@@ -46,8 +60,9 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(planes)
+        # self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
+        # self.bn2 = nn.BatchNorm2d(planes)
+        self.doubleConv = DoubleConv(planes, planes, 3, padding=1, stride=stride)
         self.conv3 = nn.Conv2d(planes, self.expansion*planes, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(self.expansion*planes)
 
@@ -60,7 +75,7 @@ class Bottleneck(nn.Module):
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)))
-        out = F.relu(self.bn2(self.conv2(out)))
+        out = F.relu(self.doubleConv(out))
         out = self.bn3(self.conv3(out))
         out += self.shortcut(x)
         out = F.relu(out)
@@ -107,24 +122,24 @@ class ResNet(nn.Module):
         return out
 
 
-def old_resnet18(num_classes=10):
+def double_resnet18(num_classes=10):
     return ResNet(BasicBlock, [2,2,2,2],num_classes)
 
-def old_resnet34(num_classes=10):
+def double_resnet34(num_classes=10):
     return ResNet(BasicBlock, [3,4,6,3],num_classes)
 
-def old_resnet50(num_classes=10):
+def double_resnet50(num_classes=10):
     return ResNet(Bottleneck, [3,4,6,3],num_classes)
 
-def old_resnet101(num_classes=10):
+def double_resnet101(num_classes=10):
     return ResNet(Bottleneck, [3,4,23,3],num_classes)
 
-def old_resnet152(num_classes=10):
+def double_resnet152(num_classes=10):
     return ResNet(Bottleneck, [3,8,36,3],num_classes)
 
 
 def demo():
-    net = old_resnet18(num_classes=100)
+    net = double_resnet18(num_classes=100)
     y = net(torch.randn(1,3,32,32))
     print(y.size())
 
