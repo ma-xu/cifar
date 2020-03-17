@@ -24,7 +24,7 @@ from utils import *
 model_names = sorted(name for name in models.__dict__
     if not name.startswith("__")
     and callable(models.__dict__[name]))
-print(model_names)
+# print(model_names)
 
 # os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3,4,5,6,7"
@@ -32,8 +32,8 @@ parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r',default=False, action='store_true', help='resume from checkpoint')
 parser.add_argument('--netName', default='old_resnet50', choices=model_names, type=str, help='choosing network')
-parser.add_argument('--bs', default=128, type=int, help='batch size')
-parser.add_argument('--workers', default=16, type=int, help='workers')
+parser.add_argument('--bs', default=256, type=int, help='batch size')
+parser.add_argument('--workers', default=8, type=int, help='workers')
 parser.add_argument('--es', default=300, type=int, help='epoch size')
 parser.add_argument('--cifar', default=10, type=int, help='dataset classes number')
 args = parser.parse_args()
@@ -107,7 +107,7 @@ optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5
 # Training
 def train(epoch):
     adjust_learning_rate(optimizer, epoch, args.lr)
-    print('\nEpoch: %d   Learning rate: %f' % (epoch, optimizer.param_groups[0]['lr']))
+    print('\nEpoch: %d   Learning rate: %f' % (epoch+1, optimizer.param_groups[0]['lr']))
     net.train()
     train_loss = 0
     correct = 0
@@ -159,7 +159,6 @@ def test(epoch):
     # record_str = str(epoch) + '\t' + "%.3f" % (test_loss / (batch_idx + 1)) + '\t' + "%.3f" % (
     #             100. * correct / total) + '\n'
     # write_record(file_path, record_str)
-    return [(test_loss / (batch_idx + 1)), (100. * correct / total)]
 
     # Save checkpoint.
     acc = 100.*correct/total
@@ -173,6 +172,8 @@ def test(epoch):
         save_path = './checkpoint/cifar'+str(args.cifar)+"/"+args.netName+"/model_best.t7"
         torch.save(state, save_path)
         best_acc = acc
+
+    return [(test_loss / (batch_idx + 1)), (100. * correct / total)]
 
 logfile = './checkpoint/cifar'+str(args.cifar)+"/"+args.netName+"/log.txt"
 record_str = "Epoch"+'\t'+"Train loss" +'\t'+"Test loss" +'\t'+"Train Acc"+ '\t'+"Test Acc"+'\n'
