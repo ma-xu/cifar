@@ -92,8 +92,8 @@ if device == 'cuda':
 if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
-    assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    checkpoint_path = './checkpoint/ckpt_cifar_'+str(args.cifar)+'_'+args.netName+'.t7'
+    # assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
+    checkpoint_path = './checkpoint/cifar'+str(args.cifar)+"/"+args.netName+"/model_best.t7"
     checkpoint = torch.load(checkpoint_path)
     net.load_state_dict(checkpoint['net'])
     best_acc = checkpoint['acc']
@@ -176,8 +176,9 @@ def test(epoch):
     return [(test_loss / (batch_idx + 1)), (100. * correct / total)]
 
 logfile = './checkpoint/cifar'+str(args.cifar)+"/"+args.netName+"/log.txt"
-record_str = "Epoch"+'\t'+"Train loss" +'\t'+"Test loss" +'\t'+"Train Acc"+ '\t'+"Test Acc"+'\n'
-write_record(logfile, record_str)
+if not os.path.exists(logfile):
+    record_str = "Epoch"+'\t'+"Train loss" +'\t'+"Test loss" +'\t'+"Train Acc"+ '\t'+"Test Acc"+'\n'
+    write_record(logfile, record_str)
 
 for epoch in range(start_epoch, start_epoch+args.es):
     train_loss, train_acc = train(epoch)
