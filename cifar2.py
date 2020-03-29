@@ -34,7 +34,7 @@ parser.add_argument('--resume', '-r',default=False, action='store_true', help='r
 parser.add_argument('--netName', default='old_resnet50', choices=model_names, type=str, help='choosing network')
 parser.add_argument('--bs', default=256, type=int, help='batch size')
 parser.add_argument('--workers', default=8, type=int, help='workers')
-parser.add_argument('--es', default=300, type=int, help='epoch size')
+parser.add_argument('--es', default=200, type=int, help='epoch size')
 parser.add_argument('--cifar', default=100, type=int, help='dataset classes number')
 args = parser.parse_args()
 
@@ -106,7 +106,7 @@ optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5
 
 # Training
 def train(epoch):
-    adjust_learning_rate(optimizer, epoch, args.lr)
+    step_adjust(optimizer, epoch, args.lr)
     print('\nEpoch: %d   Learning rate: %f' % (epoch+1, optimizer.param_groups[0]['lr']))
     net.train()
     train_loss = 0

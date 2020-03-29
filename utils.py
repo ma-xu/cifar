@@ -140,3 +140,17 @@ def adjust_learning_rate(optimizer, epoch, lr):
     lr = lr * (0.1 ** (epoch // 70))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
+
+
+def step_adjust(optimizer, epoch, lr):
+    """Sets the learning rate to the initial LR decayed by 80,120,160"""
+    if epoch >160:
+        lr = 0.0001
+    elif epoch>120:
+        lr = 0.001
+    elif epoch>80:
+        lr = 0.01
+    else:
+        lr = 0.1
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
