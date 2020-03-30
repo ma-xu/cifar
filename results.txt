@@ -1,2 +1,10 @@
 old_resnet50: 99.972	77.83
 ac_resnet50:  99.968	77.35
+
+
+
+
+GUO SERVER:
+old_resnet50: 		99.782	79.4
+ac_resnet50:		99.78	79.38
+double_resnet50:	99.78	79.42
