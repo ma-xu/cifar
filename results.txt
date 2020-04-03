@@ -9,3 +9,23 @@ old_resnet50: 		99.782	79.4
 ac_resnet50:		99.78	79.38
 double_resnet50:	99.78	79.42
 ass1_resnet50:		99.764	79.33
+ass2_resnet50:		99.778	79.26
+ass3_resnet50:		99.78	79.42
+ass4_resnet50:		99.77	79.39
+ass5_resnet50:		99.81	79.63
+
+
+
+GCP resnet18 seed=1:
+old: 	99.944	78.52
+ac:	99.94	78.21
+ass4:	99.936	77.97
+ass5:	99.936	77.61
+double: 99.936	77.78
+
+
+
+
+1. OHEM
+2. Metric Learning
+3. Long tail Distribution

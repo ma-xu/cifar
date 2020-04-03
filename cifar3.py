@@ -165,13 +165,16 @@ def test(epoch):
 
     # Save checkpoint.
     acc = 100.*correct/total
+    state = {
+        'net': net.state_dict(),
+        'acc': acc,
+        'epoch': epoch,
+    }
+    save_path = './checkpoint/cifar' + str(args.cifar) + "/" + args.netName + "/model_last.t7"
+    torch.save(state, save_path)
+
     if acc > best_acc:
         print('Saving..')
-        state = {
-            'net': net.state_dict(),
-            'acc': acc,
-            'epoch': epoch,
-        }
         save_path = './checkpoint/cifar'+str(args.cifar)+"/"+args.netName+"/model_best.t7"
         torch.save(state, save_path)
         best_acc = acc

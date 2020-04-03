@@ -3,3 +3,7 @@ from .assemble2_resnet import *
 from .assemble3_resnet import *
 from .assemble4_resnet import *
 from .assemble5_resnet import *
+from .assemble6_resnet import *
+from .assemble7_resnet import *
+from .assemble8_resnet import *
+from .assemble9_resnet import *

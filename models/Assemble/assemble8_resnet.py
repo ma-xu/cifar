@@ -1,46 +1,39 @@
 '''ResNet in PyTorch.
-Assemble: conventional + group
+Assemble: conventional + alpha(c_out) * dilate
 Only replace 3x3 Conv
 '''
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 
-__all__ = ['ass5_resnet18', 'ass5_resnet34', 'ass5_resnet50', 'ass5_resnet101',
-           'ass5_resnet152']
+__all__ = ['ass8_resnet18', 'ass8_resnet34', 'ass8_resnet50', 'ass8_resnet101',
+           'ass8_resnet152']
 
 
 class AssConv(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=1, dilation=1, groups=[1],bias=False):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=1, dilation=1, groups=1,bias=False):
         super(AssConv, self).__init__()
-        self.convbnList = nn.ModuleList()
-        self.groups = groups
-        self.alpha = nn.Parameter(
-            torch.cat(
-                (torch.ones(1), torch.zeros(len(groups)-1))
-            )
-        )
-        for i in groups:
-            self.convbnList.insert(i,nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, dilation, groups=i, bias=bias),
-                nn.BatchNorm2d(out_channels)
-            ))
+        self.ori_conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=bias)
+        self.dilate_conv = nn.Conv2d(in_channels, out_channels, math.ceil(kernel_size/2),
+                                     stride, padding, dilation=2, bias=bias)
+        self.alpha = nn.Parameter(torch.zeros(1,out_channels,1,1))
+        self.ori_bn =  nn.BatchNorm2d(out_channels)
+        self.dilate_bn = nn.BatchNorm2d(out_channels)
+
 
     def forward(self, input):
-        out = None
-        for i, convbn in enumerate(self.convbnList):
-            out = convbn(input).unsqueeze(dim=-1) if i==0 else torch.cat((out,convbn(input).unsqueeze(dim=-1)),dim=-1)
-        out = self.alpha*out
-        return out.sum(dim=-1)
+        return self.ori_bn(self.ori_conv(input))+self.alpha*self.dilate_bn(self.dilate_conv(input))
+
 
 class BasicBlock(nn.Module):
     expansion = 1
 
     def __init__(self, in_planes, planes, stride=1):
         super(BasicBlock, self).__init__()
-        self.conv1 = AssConv(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False,groups=[1,8,64])
+        self.conv1 = AssConv(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
         # self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = AssConv(planes, planes, kernel_size=3, stride=1, padding=1, bias=False,groups=[1,8,64])
+        self.conv2 = AssConv(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
         # self.bn2 = nn.BatchNorm2d(planes)
 
         self.shortcut = nn.Sequential()
@@ -65,7 +58,7 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = AssConv(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False,groups=[1,8,64])
+        self.conv2 = AssConv(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
         self.conv3 = nn.Conv2d(planes, self.expansion*planes, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(self.expansion*planes)
 
@@ -125,28 +118,28 @@ class ResNet(nn.Module):
         return out
 
 
-def ass5_resnet18(num_classes=10):
+def ass8_resnet18(num_classes=10):
     return ResNet(BasicBlock, [2,2,2,2],num_classes)
 
-def ass5_resnet34(num_classes=10):
+def ass8_resnet34(num_classes=10):
     return ResNet(BasicBlock, [3,4,6,3],num_classes)
 
-def ass5_resnet50(num_classes=10):
+def ass8_resnet50(num_classes=10):
     return ResNet(Bottleneck, [3,4,6,3],num_classes)
 
-def ass5_resnet101(num_classes=10):
+def ass8_resnet101(num_classes=10):
     return ResNet(Bottleneck, [3,4,23,3],num_classes)
 
-def ass5_resnet152(num_classes=10):
+def ass8_resnet152(num_classes=10):
     return ResNet(Bottleneck, [3,8,36,3],num_classes)
 
 
 def demo():
-    net = ass5_resnet50(num_classes=100)
+    net = ass8_resnet18(num_classes=100)
     y = net(torch.randn(1,3,32,32))
     print(y.size())
 
-# demo()
+demo()
 
 def demoAssConv():
     data = torch.rand(2,8,8,8)
