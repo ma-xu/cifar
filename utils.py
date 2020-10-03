@@ -135,9 +135,9 @@ def count_parameters(model,all=True):
     # If all= Flase, we only return the trainable parameters; tested
     return sum(p.numel() for p in model.parameters() if p.requires_grad or all)
 
-def adjust_learning_rate(optimizer, epoch, lr):
+def adjust_learning_rate(optimizer, epoch, lr,step=70):
     """Sets the learning rate to the initial LR decayed by 10 every 80 epochs"""
-    lr = lr * (0.1 ** (epoch // 70))
+    lr = lr * (0.1 ** (epoch // step))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
