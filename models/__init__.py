@@ -6,3 +6,4 @@ from .resnet import *
 # from .Combine import *
 from .weightnet_resnet import *
 from .cnl_resnet import *
+from .ours_resnet import *
