@@ -31,6 +31,7 @@ class WeightNet(nn.Module):
         self.wn_fc2 = nn.Conv2d(self.M * oup, oup * inp * ksize * ksize, 1, 1, 0, groups=self.G * oup, bias=False)
 
     def forward(self, x):
+        b = x.size()[0]
         x_gap = F.adaptive_avg_pool2d(x,1)
         x_gap = self.reduce(x_gap)
         x_w = self.wn_fc1(x_gap)
@@ -43,8 +44,8 @@ class WeightNet(nn.Module):
             return x
 
         x = x.reshape(1, -1, x.shape[2], x.shape[3])
-        x_w = x_w.reshape(-1, self.oup, self.inp, self.ksize, self.ksize)
-        x = F.conv2d(x, weight=x_w, stride=self.stride, padding=self.pad, groups=x_w.shape[0])
+        x_w = x_w.reshape(-1, self.inp, self.ksize, self.ksize)
+        x = F.conv2d(x, weight=x_w, stride=self.stride, padding=self.pad, groups=b)
         x = x.reshape(-1, self.oup, x.shape[2], x.shape[3])
         return x
 
@@ -167,7 +168,7 @@ def weight_resnet152(num_classes=10):
 
 def demo():
     net = weight_resnet18(num_classes=100)
-    y = net(torch.randn(1,3,32,32))
+    y = net(torch.randn(8,3,32,32))
     print(y.size())
 
 # demo()
