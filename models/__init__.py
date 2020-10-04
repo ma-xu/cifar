@@ -5,3 +5,4 @@ from .resnet import *
 # from .Assemble import *
 # from .Combine import *
 from .weightnet_resnet import *
+from .cnl_resnet import *
