@@ -11,44 +11,80 @@ import torch.nn.functional as F
 __all__ = ['weight_resnet18', 'weight_resnet34', 'weight_resnet50', 'weight_resnet101',
            'weight_resnet152']
 
+#
+# class WeightNet(nn.Module):
+#     def __init__(self, inp, oup, ksize, stride):
+#         super().__init__()
+#         self.M = 2
+#         self.G = 2
+#
+#         self.pad = ksize // 2
+#         inp_gap = max(16, inp//16)
+#         self.inp = inp
+#         self.oup = oup
+#         self.ksize = ksize
+#         self.stride = stride
+#
+#         self.reduce = nn.Conv2d(inp, max(16, inp // 16), 1, 1, 0, bias=True)
+#         self.wn_fc1 = nn.Conv2d(inp_gap, self.M * oup, 1, 1, 0, groups=1, bias=True)
+#         self.sigmoid = nn.Sigmoid()
+#         self.wn_fc2 = nn.Conv2d(self.M * oup, oup * inp * ksize * ksize, 1, 1, 0, groups=self.G * oup, bias=False)
+#
+#     def forward(self, x):
+#         b = x.size()[0]
+#         x_gap = F.adaptive_avg_pool2d(x,1)
+#         x_gap = self.reduce(x_gap)
+#         x_w = self.wn_fc1(x_gap)
+#         x_w = self.sigmoid(x_w)
+#         x_w = self.wn_fc2(x_w)
+#
+#         if x.shape[0] == 1:  # case of batch size = 1
+#             x_w = x_w.reshape(self.oup, self.inp, self.ksize, self.ksize)
+#             x = F.conv2d(x, weight=x_w, stride=self.stride, padding=self.pad)
+#             return x
+#
+#         x = x.reshape(1, -1, x.shape[2], x.shape[3])
+#         x_w = x_w.reshape(-1, self.inp, self.ksize, self.ksize)
+#         x = F.conv2d(x, weight=x_w, stride=self.stride, padding=self.pad, groups=b)
+#         x = x.reshape(-1, self.oup, x.shape[2], x.shape[3])
+#         return x
+
 
 class WeightNet(nn.Module):
-    def __init__(self, inp, oup, ksize, stride):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, reduction_ratio=16, M=2, G=2):
         super().__init__()
-        self.M = 2
-        self.G = 2
 
-        self.pad = ksize // 2
-        inp_gap = max(16, inp//16)
-        self.inp = inp
-        self.oup = oup
-        self.ksize = ksize
+        self.M = M
+        self.G = G
+
+        self.padding = kernel_size // 2
+        input_gap = max(reduction_ratio, in_channels // reduction_ratio)
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
         self.stride = stride
 
-        self.reduce = nn.Conv2d(inp, max(16, inp // 16), 1, 1, 0, bias=True)
-        self.wn_fc1 = nn.Conv2d(inp_gap, self.M * oup, 1, 1, 0, groups=1, bias=True)
+        self.fc1 = nn.Conv2d(input_gap, self.M * out_channels, 1, 1, 0, groups=1, bias=True)
         self.sigmoid = nn.Sigmoid()
-        self.wn_fc2 = nn.Conv2d(self.M * oup, oup * inp * ksize * ksize, 1, 1, 0, groups=self.G * oup, bias=False)
+        self.fc2 = nn.Conv2d(self.M * out_channels, out_channels * in_channels * kernel_size * kernel_size, 1, 1, 0, groups=self.G * out_channels)
+
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.reduce = nn.Conv2d(in_channels, input_gap, 1, 1, 0, bias=True)
 
     def forward(self, x):
-        b = x.size()[0]
-        x_gap = F.adaptive_avg_pool2d(x,1)
-        x_gap = self.reduce(x_gap)
-        x_w = self.wn_fc1(x_gap)
+        b, _, _, _ = x.size()
+        x_gap = self.avg_pool(x) # N x C_in x 1 x 1
+        x_gap = self.reduce(x_gap) # N x C_in / r x 1 x 1
+
+        x_w = self.fc1(x_gap) # N x M(C_out) x 1 x 1
         x_w = self.sigmoid(x_w)
-        x_w = self.wn_fc2(x_w)
+        x_w = self.fc2(x_w) # N x (C_out)(C_in)(kH)(kW) x 1 x 1
 
-        if x.shape[0] == 1:  # case of batch size = 1
-            x_w = x_w.reshape(self.oup, self.inp, self.ksize, self.ksize)
-            x = F.conv2d(x, weight=x_w, stride=self.stride, padding=self.pad)
-            return x
-
-        x = x.reshape(1, -1, x.shape[2], x.shape[3])
-        x_w = x_w.reshape(-1, self.inp, self.ksize, self.ksize)
-        x = F.conv2d(x, weight=x_w, stride=self.stride, padding=self.pad, groups=b)
-        x = x.reshape(-1, self.oup, x.shape[2], x.shape[3])
+        x = x.view(1, -1, x.size(2), x.size(3)) # 1 x N(C_in) x H x W
+        x_w = x_w.view(-1, self.in_channels, self.kernel_size, self.kernel_size) # (C_out)(N) x C_in x kH, kW
+        x = F.conv2d(x, weight=x_w, stride=self.stride, padding=self.padding, groups=b)
+        x = x.view(-1, self.out_channels, x.size(2), x.size(3)) # N x C_out x H x W
         return x
-
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -168,7 +204,7 @@ def weight_resnet152(num_classes=10):
 
 def demo():
     net = weight_resnet18(num_classes=100)
-    y = net(torch.randn(8,3,32,32))
+    y = net(torch.randn(8, 3, 32, 32))
     print(y.size())
 
-# demo()
+demo()
